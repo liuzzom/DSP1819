@@ -1,6 +1,13 @@
 def exp(base, exponent, module):
-	digits = bin(exponent)
-	digits = digits[2:]
+	"""
+	Calcolo del valore di (base^exponent) % module
+	:param base:
+	:param exponent:
+	:param module:
+	:return: d tale che d = (base^exponent) % module
+	"""
+	digits = bin(exponent) # rappresentazione binaria dell'esponente
+	digits = digits[2:] # rimozione di "0b"
 
 	d = 1
 
