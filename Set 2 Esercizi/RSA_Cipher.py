@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
-import numpy.random as rand
+import random as rand
 from string import ascii_lowercase
 import math
 
@@ -63,7 +63,7 @@ def numberGeneration(k):
 	number = 0
 	
 	while number % 2 == 0 or number % 3 == 0 or number % 5 == 0:
-		number = rand.randint(min, max + 1)
+		number = rand.randrange(min, max + 1)
 	
 	return number
 
@@ -99,13 +99,13 @@ def rabin(number):
 	x = 2
 	r, m = numberDecomposition(number - 1)
 	
-	sequence = [(x ** m) % number]
+	sequence = [exp(x, m, number)]
 	
 	if sequence[0] == 1:
 		return False
 	
 	for i in range(1, r + 1):
-		sequence.append((sequence[i - 1] ** 2) % number)  # x[i] = x[i-1]^2 % n
+		sequence.append(exp(sequence[i - 1], 2, number))  # x[i] = x[i-1]^2 % n
 		
 		if (i < r) and sequence[i] == 1:
 			return True
@@ -191,9 +191,9 @@ def generateModule(k, times):
 	return p * q, p, q
 
 def getExponents(phi):
-	e = rand.randint(low=phi//2, high=phi-phi//4)
+	e = rand.randrange(phi//2, phi-phi//4)
 	while mcd(e, phi) != 1:
-		e = rand.randint(low=phi//2, high=phi-phi//4)
+		e = rand.randrange(phi//2, phi-phi//4)
 	
 	x, y, gcd = extendedEuclideanAlg(phi, e)
 	
@@ -253,9 +253,6 @@ def decrypt(ciphertext, privateKey):
 	d, n = privateKey
 	
 	plaintext = exp(int(ciphertext), d, n)
-	
-	print(plaintext)
-	
 	
 	# inserimento di leading zero se persi durante l'elevamento a potenza
 	while len(str(plaintext)) < (len(str(n)) - 1):
