@@ -7,6 +7,8 @@ import math
 alphabet = [letter for letter in ascii_lowercase]
 alphabet.insert(0, ' ')
 
+# Algoritmo di esponenziazione modulare veloce
+
 def exp(base, exponent, module):
 	"""
 	Calcolo del valore di (base^exponent) % module
@@ -28,6 +30,8 @@ def exp(base, exponent, module):
 
 	return d
 
+# Calcolo dell'MCD tramite algoritmo di Euclide
+
 def mcd(a, b):
   """Restituisce il Massimo Comune Divisore tra a e b
   :param a: primo numero
@@ -36,6 +40,8 @@ def mcd(a, b):
   while b:
   	a, b = b, a%b
   return a
+
+# Calcolo dell'MCD e dei coefficienti dell'identità di Bezout tramite algoritmo di Eculide esteso
 
 def extendedEuclideanAlg(a, b):
 	"""
@@ -51,22 +57,40 @@ def extendedEuclideanAlg(a, b):
 		x0, x1 = x1, x0 - q * x1
 	return x0, y0, b
 
+# Generazione dei numeri primi tramite Test di Miller-Rabin
+
+def initialTest(number):
+	if number % 2 == 0:
+		return False
+
+	end = 100001
+	if end > number:
+		end = number
+
+	for i in range(3, end, 2):
+		if number % i == 0:
+			return False
+
+	return True
+
 def numberGeneration(k):
 	"""
 	Genera un numero potenzialmente primo di k bit
 	:param k: numero di bit del numero da generare
-	:return: Genera un numero di k bit non divisibile per 2, 3 e 5
+	:return: Genera un numero di k bit non divisibile per i primi 100 divisori banali
 	"""
 	# un numero di k bit è compreso tra 2^(k-1) e 2^k - 1
-	min = 2 ** (k - 1)
-	max = (2 ** k) - 1
 	number = 0
-	
-	while number % 2 == 0 or number % 3 == 0 or number % 5 == 0:
-		number = rand.randrange(min, max + 1)
-	
-	return number
 
+	while not initialTest(number):
+		number = rand.getrandbits(k)
+		# Si setta il MSB e il LSB a 1 e ci si assicura che il numero sia di k bit
+		number |= (1 << (k-1)) | 1
+
+		break
+
+	# print("generated: " + str(number))
+	return number
 
 def numberDecomposition(n):
 	"""
@@ -77,44 +101,41 @@ def numberDecomposition(n):
 	originalNumber = n
 	count = 0
 	number = n
-	
-	while True:
-		number = number / 2
-		if number.is_integer():
-			count = count + 1
-		else:
-			break
-	
-	pari = 2 ** count
-	dispari = originalNumber / pari
-	return count, int(dispari)
+
+	while number % 2 == 0:
+		number = number // 2
+		count = count + 1
+
+	return count, number
 
 
 def rabin(number):
 	"""
 	Esegue il test di Miller-Rabin. Se esso restituisce True, il numero è sicuramente composto, altrimenti potrebbe essere primo
 	:param number:
-	:return: True, se il numero è composto; False se il numero è probabilmente positivo
+	:return: True, se il numero è composto; False se il numero è probabilmente primo
 	"""
 	x = 2
 	r, m = numberDecomposition(number - 1)
-	
+	# print("r: " + str(r) + " m: " + str(m))
+
 	sequence = [exp(x, m, number)]
-	
-	if sequence[0] == 1:
+	# print(sequence[0])
+
+	if sequence[0] == 1 or sequence[0] == (number - 1):
 		return False
-	
+
 	for i in range(1, r + 1):
 		sequence.append(exp(sequence[i - 1], 2, number))  # x[i] = x[i-1]^2 % n
-		
+		# print(sequence[i])
+
 		if (i < r) and sequence[i] == 1:
 			return True
-		
-		if (i < r) and (sequence[i]) == number - 1:
-			return False
-	
-	return True
 
+		if (i < r) and (sequence[i]) == (number - 1):
+			return False
+
+	return True
 
 def isPrime(number, times):
 	"""
@@ -125,112 +146,98 @@ def isPrime(number, times):
 	for i in range(times):
 		if rabin(number):
 			return False
-	
+
 	return True
 
-def generatePrime(bits, times=2):
+def generatePrime(bits, times=4):
 	primeFlag = False
-	
+
 	while not primeFlag:
 		number = numberGeneration(bits)
 		primeFlag = isPrime(number, times)
-	
+
 	return number
 
+# Encoding e Decoding di Messaggi
 
 def encoding(char):
 	"""
 	:param char: Carattere da codificare
 	:return: Stringa contenente le 2 cifre (con eventuale padding) della codifica del carattere in input
 	"""
-	encodedChar = alphabet.index(char)
-	
-	if encodedChar < 10:
-		encodedChar = "0" + str(encodedChar)
-		return encodedChar
-	
+	encodedChar = alphabet.index(char) + 10
+
 	return str(encodedChar)
 
 def decoding(number):
-	return alphabet[number]
+	return alphabet[number - 10]
 
 def stringEncoding(string):
 	encoded = ""
-	
+
 	for i in range(len(string)):
 		encoded += encoding(string[i])
-	
+
 	return encoded
 
 def stringDeconding(string):
 	decoded = ""
-	
+
 	for i in range(0, len(string), 2):
 		decoded += decoding(int(string[i:i + 2]))
-		
+
 	return decoded
+
+# Generazione Modulo RSA
 
 def generateModule(k, times):
 	"""
 	:param k: dimensione in bit di p e q
-	:param times: numero di test di Miller-Rabin da fare
+	:param times: numero di esecuzioni del test di Miller-Rabin
 	:return: modulo n = p * q, p, q
 	"""
 	if times == "":
 		p = generatePrime(k)
 		q = generatePrime(k)
 		while p == q:
-			q = generatePrime(k)
-			
+			q = generatePrime(k) # in modo che p e q non siano uguali
+
 	else:
 		p = generatePrime(k, int(times))
 		q = generatePrime(k, int(times))
 		while p == q:
 			q = generatePrime(k, int(times))
-		
+
 	return p * q, p, q
+
+# Generazione di e, d per la creazione delle chiavi
 
 def getExponents(phi):
 	e = rand.randrange(phi//2, phi-phi//4)
 	while mcd(e, phi) != 1:
 		e = rand.randrange(phi//2, phi-phi//4)
-	
+
 	x, y, gcd = extendedEuclideanAlg(phi, e)
-	
+
 	while y < 0:
 		y += phi
-	
+
 	return e, y
+
+# Preproccessing del testo
 
 def textPreprocessing(text):
 	""" Rimozione dei caratteri speciali e conversione in maiuscolo
 		:param text: testo da preprocesssare
 		"""
-	
+
 	text = text.lower()  # conversione in maiuscolo
 	text = re.sub(r"['\",.;:_@#()”“’—?!&$\n]+\ *", " ", text)  # conversione dei caratteri speciali in uno spazio
 	text = text.replace("-", "")  # conversione del carattere - in uno spazio
 	text = ' '.join(text.split())
 	return text
 
-def getBlocks(text, blockSize):
-	"""
-	Divisione del testo in blocchi per l'encryption
-	:param text: testo da suddividere
-	:param blockSize: dimensione dei blocchi
-	:return: array contenente i blocchi
-	"""
-	# aggiunta di padding nel caso sia necessario
-	paddingElementsNeeded = math.ceil(len(text) / blockSize) * blockSize - len(text)
-	for i in range(paddingElementsNeeded):
-		text = text + '0' # come carattere di padding viene utilizzato lo spazio
-
-	blocks = []
-	while len(text) > 0:
-		blocks.append(text[:blockSize]) # inserisce un blocco
-		text = text[blockSize:] # accorcia l'array di un blocco
-		
-	return blocks
+# Encryption
 
 def encrypt(plaintext, publicKey):
 	"""
@@ -240,8 +247,10 @@ def encrypt(plaintext, publicKey):
 	:return: blocco di ciphertext
 	"""
 	e, n = publicKey
-	
+
 	return str(exp(int(plaintext), e, n))
+
+# Decryption
 
 def decrypt(ciphertext, privateKey):
 	"""
@@ -251,24 +260,11 @@ def decrypt(ciphertext, privateKey):
 	:return: blocco di plaintext
 	"""
 	d, n = privateKey
-	
 	plaintext = exp(int(ciphertext), d, n)
-	
-	# inserimento di leading zero se persi durante l'elevamento a potenza
-	while len(str(plaintext)) < (len(str(n)) - 1):
-		plaintext = '0' + str(plaintext)
-	
+
 	return str(plaintext)
 
-def CRTDecrypt(ciphertext, privateKey, p, q):
-	"""
-	Decryption di un blocco fatto tramite il CRT
-	:param ciphertext: blocco di ciphertext
-	:param privateKey: chiave privata
-	:param p: parte del modulo RSA n
-	:param q: parte del modulo RSA n
-	:return: blocco di plaintext
-	"""
+def CRTParamsCalc(ciphertext, privateKey, p, q):
 	d, n = privateKey
 	
 	mp = exp(int(ciphertext), d, p)
@@ -284,30 +280,49 @@ def CRTDecrypt(ciphertext, privateKey, p, q):
 	while qInv < 0:
 		qInv += p
 		
+	return mp, mq, pInv, qInv
+
+def CRTDecrypt(privateKey, p, q, mp, mq, pInv, qInv):
+	"""
+	Decryption di un blocco fatto tramite il CRT
+	:param ciphertext: blocco di ciphertext
+	:param privateKey: chiave privata
+	:param p: parte del modulo RSA n
+	:param q: parte del modulo RSA n
+	:return: blocco di plaintext
+	"""
+	d, n = privateKey
+
 	# calcolo del plaintext
 	m = (mp * q * qInv + mq * p * pInv) % n
-	
-	
-	# inserimento di leading zero se persi durante l'elevamento a potenza
-	while len(str(m)) < (len(str(n)) - 1):
-		m = '0' + str(m)
-	
+
 	return str(m)
+
+def getRandomPlaintext(length=20):
+	return ''.join(rand.choice(alphabet) for i in range(length))
 
 def main():
 	print("Welcome!\n-----\n")
+
+	# Generazione casuale di messaggi
+	length = int(input("Insert message length: "))
+	plaintexts = []
+	for i in range(100):
+		string = getRandomPlaintext(length)
+		textPreprocessing(string)
+		plaintexts.append(string)
 	
-	plaintext = input("Insert the string to encrypt: ")
+	# Inserimento Parametri per la generazione del modulo
 	k = int(input("Insert the value of k: "))
 	times = input("Number of Miller-Rabin test execution (or enter for default value): ")
+	print("message length: " + str(length))
+	print("using " + str(k) + " bits for p and q")
+	if times == "":
+		print("Miller-Rabin test will be done 4 times")
+	else:
+		print("Miller-Rabin test will be done " + str(times) + " times")
 	print("\n-----\n")
 	
-	# Plaintext Preprocessing
-	plaintext = textPreprocessing(plaintext)
-	print("plaintext: " + plaintext)
-	print("using " + str(k) + " bits for p and q")
-	print("Miller-Rabin test done " + str(times) + " times\n-----\n")
-
 	# Generazione del modulo RSA
 	n, p, q = generateModule(k, times)
 	phi = (p - 1) * (q - 1)
@@ -317,51 +332,39 @@ def main():
 	print("phi:" + str(phi))
 	print("\n-----\n")
 	
+	
+	if n <= int(stringEncoding(plaintexts[0])):
+		print("ERROR: You have to use a bigger value for k")
+		return
+	
 	# Generazione delle chiavi
 	e, d = getExponents(phi)
-	print("e:"+ str(e))
+	print("e:" + str(e))
 	print("d:" + str(d))
 	print("\n-----\n")
 	
 	publicKey = (e, n)
 	privateKey = (d, n)
-	
-	# Codifica del plaintext e divisione in blocchi. In questo modo è possibile utilizzare un n "non abbastanza grande"
-	encodedPlaintext = stringEncoding(plaintext)
-	blockSize = len(str(n)) - 1
-	plainBlocks = getBlocks(encodedPlaintext, blockSize)
-	cipherBlocks = []
-	
-	# encryption
-	for block in plainBlocks:
-		cipherBlocks.append(encrypt(block, publicKey))
-	
-	print(encodedPlaintext)
-	print(plainBlocks)
-	print(cipherBlocks)
-	print("\n-----\n")
-	
-	# decryption tramite approccio tradizionale
-	testBlocks = []
-	for block in cipherBlocks:
-		testBlocks.append(decrypt(block, privateKey))
-	
-	testString = ''.join(testBlocks)
-	print(testBlocks)
-	print(testString)
-	print("decrypted plaintext using normal decryption:" + stringDeconding(testString))
-	print("\n-----\n")
-	
-	# decryption tramite
-	testBlocks = []
-	for block in cipherBlocks:
-		testBlocks.append(CRTDecrypt(block, privateKey, p, q))
-	
-	testString = ''.join(testBlocks)
-	print("decrypted plaintext using CRT speedup:" + stringDeconding(testString))
-	print("\n-----\n")
 
+	# Encryption
+	ciphertexts = []
+	for plaintext in plaintexts:
+		plaintext = stringEncoding(plaintext)
+		ciphertexts.append(encrypt(plaintext, publicKey))
+		
+	# Decryption
+	decryptionResults = []
+	for ciphertext in ciphertexts:
+		mp, mq, pInv, qInv = CRTParamsCalc(ciphertext, privateKey, p, q) # Precalcolo dei valori della formula CRT
+		# decryptionResults.append(stringDeconding(decrypt(ciphertext, privateKey))) # Decryption Standard
+		decryptionResults.append(stringDeconding(CRTDecrypt(privateKey, p, q, mp, mq, pInv, qInv))) # CRT Decryption
+
+	for i in range(len(plaintexts)):
+		if not plaintexts[i] == decryptionResults[i]:
+			print("ERROR: Decryption Fail" + plaintexts[i] + " -> " + decryptionResults[i])
+			return
+
+	print("SUCCESS")
 
 if __name__ == '__main__':
 	main()
-
